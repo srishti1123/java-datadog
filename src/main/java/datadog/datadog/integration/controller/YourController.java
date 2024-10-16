@@ -85,7 +85,7 @@ public class YourController {
                 // Set Git commit SHA and repository URL tags
                 activeSpan.setTag("git.commit.sha", "9d2877b24555dbbeab72704d2bce203fd6603513");
                 activeSpan.setTag("git.repository_url", "https://github.com/srishti1123/java-datadog.git");
-                activeSpan.setTag("service.name", "java-hello");
+                activeSpan.setTag("service.name", "java-hello-0.0.1-SNAPSHOT");
 
                 // Add environment and version as tags
 //                activeSpan.setTag("env", "production");
