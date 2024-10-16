@@ -88,11 +88,11 @@ public class YourController {
                 activeSpan.setTag("service.name", "java-hello");
 
                 // Add environment and version as tags
-                activeSpan.setTag("env", "production");
-                activeSpan.setTag("version", "v2");
+//                activeSpan.setTag("env", "production");
+//                activeSpan.setTag("version", "v2");
 
-                logger.info("Git telemetry tags set successfully: commit SHA={}, repository URL={}, service name={}, env={}, version={}",
-                        gitCommitSha, gitRepositoryUrl, serviceName, "production", "v2");
+                logger.info("Git telemetry tags set successfully: commit SHA={}, repository URL={}, service name={}",
+                        gitCommitSha, gitRepositoryUrl, serviceName);
             } else {
                 logger.warn("No active span available to set Git telemetry tags.");
             }
