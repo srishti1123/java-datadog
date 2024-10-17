@@ -9,6 +9,9 @@ import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,19 +34,21 @@ public class YourController {
 
     @GetMapping("/hello")
     @Trace(operationName = "hello.request")
-    public String hello(@RequestParam(required = false) String name) {
+    public ResponseEntity<String> hello(@RequestParam(required = false) String name) {
         try {
+            // Attach Datadog trace and span ids to the logs
             ThreadContext.put("dd.trace_id", CorrelationIdentifier.getTraceId());
             ThreadContext.put("dd.span_id", CorrelationIdentifier.getSpanId());
 
             logger.info("Received request for /hello endpoint with name: {}", name);
 
+            // Set Git telemetry tags
             setGitTelemetryTags();
 
-            if (!"hello".equalsIgnoreCase(name)) {
+            if (name == null || !"hello".equalsIgnoreCase(name)) {
                 String errorMessage = "Invalid input: expected 'hello', but received: " + name;
-                logger.info("An error occurred: {}", errorMessage);
-                return "Error: " + errorMessage;
+                logger.error("Error: {}", errorMessage);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
             }
 
             logger.info("Processing the request...");
@@ -51,8 +56,14 @@ public class YourController {
             logger.info("Generated response: {}", response);
             logger.info("Completed processing for /hello");
 
-            return response;
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("An internal error occurred while processing the request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Internal Server Error: Please try again later.");
         } finally {
+            // Clean up trace and span ids from the ThreadContext
             ThreadContext.remove("dd.trace_id");
             ThreadContext.remove("dd.span_id");
         }
@@ -72,10 +83,18 @@ public class YourController {
                 logger.info("Git telemetry tags set successfully: commit SHA={}, repository URL={}, service name={}",
                         gitCommitSha, gitRepositoryUrl, serviceName);
             } else {
-                logger.info("No active span available to set Git telemetry tags.");
+                logger.warn("No active span available to set Git telemetry tags.");
             }
         } else {
-            logger.info("Tracer is not available.");
+            logger.warn("Tracer is not available.");
         }
+    }
+
+    // Centralized error handling method
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleAllExceptions(Exception ex) {
+        logger.error("An unexpected error occurred", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Internal Server Error: Please contact support.");
     }
 }
