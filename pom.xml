@@ -38,7 +38,10 @@
 			<artifactId>dd-trace-api</artifactId>
 			<version>1.12.0</version>
 		</dependency>
-
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
 		<!-- OpenTracing API -->
 		<dependency>
 			<groupId>io.opentracing</groupId>
