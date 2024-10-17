@@ -23,65 +23,48 @@ public class YourController {
 
     private static final Logger logger = LoggerFactory.getLogger(YourController.class);
 
-    @Value("${DD_GIT_COMMIT_SHA}")
-    private String gitCommitSha;
-
-    @Value("${DD_GIT_REPOSITORY_URL}")
-    private String gitRepositoryUrl;
-
-    @Value("${spring.application.name}")
-    private String serviceName;
-
     @GetMapping("/hello")
-    @Trace(operationName = "hello.request")
-    public ResponseEntity<String> hello(@RequestParam(required = false) String name) {
+    public String hello(@RequestParam(required = false) String name) {
         try {
-            // Attach Datadog trace and span ids to the logs
+            // Add Datadog tracing information to the log context
             ThreadContext.put("dd.trace_id", CorrelationIdentifier.getTraceId());
             ThreadContext.put("dd.span_id", CorrelationIdentifier.getSpanId());
+            ThreadContext.put("dd.service", "java-hello-0.0.1-SNAPSHOT");
+            ThreadContext.put("dd.env", "production");
+            ThreadContext.put("dd.version", "1.0.0");
 
             logger.info("Received request for /hello endpoint with name: {}", name);
-
-            // Set Git telemetry tags
-            setGitTelemetryTags();
 
             if (name == null || !"hello".equalsIgnoreCase(name)) {
                 String errorMessage = "Invalid input: expected 'hello', but received: " + name;
                 logger.error("Error: {}", errorMessage);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+                return errorMessage;
             }
 
             logger.info("Processing the request...");
-            String response = "Hello, Datadog!";
-            logger.info("Generated response: {}", response);
-            logger.info("Completed processing for /hello");
+            return "Hello, Datadog!";
 
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            logger.error("An internal error occurred while processing the request", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal Server Error: Please try again later.");
         } finally {
-            // Clean up trace and span ids from the ThreadContext
-            ThreadContext.remove("dd.trace_id");
-            ThreadContext.remove("dd.span_id");
+            // Clean up the thread context
+            ThreadContext.clearAll();
         }
     }
+
 
     @Trace(operationName = "set.git.telemetry.tags")
     public void setGitTelemetryTags() {
         Tracer tracer = (Tracer) GlobalTracer.get();
+        logger.info("Tracer instance: {}", tracer);  // Add this line to log the tracer instance
 
         if (tracer != null) {
             Span activeSpan = tracer.activeSpan();
+            logger.info("Active span: {}", activeSpan);  // Add this line to log the active span
+
             if (activeSpan != null) {
                 activeSpan.setTag("git.commit.sha", "9d2877b24555dbbeab72704d2bce203fd6603513");
                 activeSpan.setTag("git.repository_url", "https://github.com/srishti1123/java-datadog.git");
                 activeSpan.setTag("service.name", "java-hello-0.0.1-SNAPSHOT");
-
-                logger.info("Git telemetry tags set successfully: commit SHA={}, repository URL={}, service name={}",
-                        gitCommitSha, gitRepositoryUrl, serviceName);
+                logger.info("Git telemetry tags set successfully.");
             } else {
                 logger.warn("No active span available to set Git telemetry tags.");
             }
@@ -89,6 +72,7 @@ public class YourController {
             logger.warn("Tracer is not available.");
         }
     }
+
 
     // Centralized error handling method
     @ExceptionHandler(Exception.class)
