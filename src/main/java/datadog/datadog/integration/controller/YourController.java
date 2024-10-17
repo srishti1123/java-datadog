@@ -61,7 +61,7 @@ public class YourController {
             logger.info("Active span: {}", activeSpan);  // Add this line to log the active span
 
             if (activeSpan != null) {
-                activeSpan.setTag("git.commit.sha", "9d2877b24555dbbeab72704d2bce203fd6603513");
+                activeSpan.setTag("git.commit.sha", "fd4b412f3944744ee855a61b34012bf68fac0f60");
                 activeSpan.setTag("git.repository_url", "https://github.com/srishti1123/java-datadog.git");
                 activeSpan.setTag("service.name", "java-hello-0.0.1-SNAPSHOT");
                 logger.info("Git telemetry tags set successfully.");
